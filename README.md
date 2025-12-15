@@ -1,235 +1,154 @@
-Лабораторная работа №3
- 
-Разработка микросервиса предсказаний на FastAPI с использованием Docker
- 
-1\. Цель работы
- 
-  
- 
-Создать микросервис, выполняющий предсказания обученной модели машинного обучения.
- 
-Сервис должен предоставлять REST API, использовать модель, выгруженную из MLflow, и быть упакован в Docker-контейнер.
- 
-  
- 
-2\. Структура проекта
- 
-my_proj
- 
+# Лабораторная работа №4  
+## Мониторинг ML-сервиса с использованием Prometheus и Grafana
+
+---
+
+## 1. Цель работы
+
+Целью лабораторной работы является разработка и развертывание системы мониторинга
+микросервиса машинного обучения с использованием **Prometheus** и **Grafana**.
+
+В ходе работы необходимо:
+- запустить ML-сервис предсказаний на FastAPI;
+- реализовать сбор метрик (HTTP-запросы, задержки, результаты предсказаний);
+- настроить Prometheus для сбора метрик;
+- визуализировать метрики в Grafana с помощью dashboard’ов;
+- организовать запуск всех компонентов через Docker Compose.
+
+---
+
+## 2. Общая архитектура системы
+
+Система состоит из следующих компонентов:
+
+- **ML Service (FastAPI)**  
+  REST API для получения предсказаний и экспорта метрик.
+
+- **Request Generator**  
+  Сервис генерации HTTP-запросов для имитации нагрузки.
+
+- **Prometheus**  
+  Система сбора и хранения метрик.
+
+- **Grafana**  
+  Система визуализации метрик и построения дашбордов.
+
+Все сервисы запускаются в отдельных Docker-контейнерах и объединены в одну сеть с
+помощью Docker Compose.
+
+---
+
+## 3. Структура проекта
+
+my_proj/
+├── services/
+│ ├── ml_service/
+│ │ ├── main.py
+│ │ ├── Dockerfile
+│ │ └── requirements.txt
+│ │
+│ ├── requests/
+│ │ ├── request_generator.py
+│ │ ├── Dockerfile
+│ │ └── requirements.txt
+│ │
+│ ├── prometheus/
+│ │ └── prometheus.yml
+│ │
+│ ├── grafana/
+│ │
+│ └── compose.yml
 │
- 
-├── services
- 
-│   ├── ml_service
- 
-│   │   ├── main.py
- 
-│   │   ├── api_handler.py
- 
-│   │   ├── requirements.txt
- 
-│   │   └── Dockerfile
- 
-│   │
- 
-│   └── models
- 
-│       ├── get_model.py
- 
-│       └── model.pkl
- 
-│
- 
-├── requirements.txt
- 
-├── .gitignore
- 
-└── README.md
- 
-  
- 
-3\. Установка и подготовка окружения
- 
-3.1. Создание виртуального окружения
- 
-python3.13 -m venv .venv
- 
-source .venv/bin/activate
- 
-  
- 
-3.2. Установка зависимостей
- 
-pip install -r requirements.txt
- 
-  
- 
-4\. Подготовка модели
- 
-  
- 
-Файл модели model.pkl gjkexftv из MLflow.
- 
-  
- 
-Команда для выгрузки модели:
- 
-python services/models/get_model.py
- 
-  
- 
-  
- 
-После выполнения в каталоге появился файл:
- 
-  
- 
-services/models/model.pkl
- 
-  
- 
-5\. FastAPI сервис
- 
-  
- 
-Основной модуль: services/ml_service/main.py
- 
-Вспомогательный модуль: services/ml\_service/api\_handler.py
- 
-  
- 
-Доступные методы API
- 
-GET /
- 
-  
- 
-Возвращает тестовый ответ.
- 
-  
- 
-Пример:
- 
-  
- 
-{
- 
-  "Hello": "World"
- 
-}
- 
-  
- 
-POST /api/prediction?item_id=<id>
- 
-  
- 
-  
- 
-  
- 
-5\. Локальный запуск FastAPI сервера
- 
-uvicorn services.ml_service.main:app --reload
- 
-  
- 
-  
- 
-Сервис доступен по адресам:
- 
-  
- 
-http://localhost:8000
- 
-  
- 
-http://localhost:8000/docs
- 
- (Swagger)
- 
-  
- 
-6\. Docker
- 
-6.1. Сборка Docker-образа
- 
-docker build -t heart-ml-service:1 .
- 
-  
- 
-6.2. Запуск контейнера
- 
-docker run -d \
- 
-  -p 8000:8000 \
- 
-  -v $(pwd)/../models:/models \
- 
-  --name heart-ml-container \
- 
-  heart-ml-service:1
- 
-  
- 
-6.3. Проверка состояния
- 
-docker ps
- 
-  
- 
-7\. Файлы, не включаемые в репозиторий (.gitignore)
- 
-.venv/
- 
-\_\_pycache\_\_/
- 
-*.pyc
- 
-  
- 
-mlruns/
- 
-mlflow/
- 
-*.db
- 
-  
- 
-*.log
- 
-  
- 
-8\. Результаты работы
- 
-  
- 
+├── README.md
+└── requirements.txt
+## 4. ML-сервис предсказаний
+
+ML-сервис реализован с использованием **FastAPI** и предоставляет следующие endpoints:
+
+- `GET /` — тестовый endpoint
+- `POST /api/prediction` — получение предсказания
+- `GET /metrics` — экспорт метрик для Prometheus
+
+### Собираемые метрики:
+- количество HTTP-запросов (`http_requests_total`);
+- задержка обработки запросов (`http_request_duration_seconds`);
+- количество предсказаний (`model_predictions_count`).
+
+---
+
+## 5. Генератор запросов (Request Generator)
+
+Сервис `request_generator` предназначен для имитации нагрузки на ML-сервис.
+Он периодически отправляет POST-запросы на endpoint `/api/prediction`,
+что позволяет наблюдать изменение метрик в Prometheus и Grafana.
+
+---
+
+## 6. Prometheus
+
+Prometheus используется для:
+- периодического опроса endpoint `/metrics`;
+- хранения временных рядов метрик.
+
+Конфигурация Prometheus задана в файле `prometheus/prometheus.yml`,
+где настроен target для ML-сервиса.
+
+Prometheus доступен по адресу:
+http://localhost:9090
+
+yaml
+Копировать код
+
+---
+
+## 7. Grafana
+
+Grafana используется для визуализации метрик, полученных из Prometheus.
+
+### Реализованные панели мониторинга:
+- **Requests per minute (RPS)** — количество запросов в минуту;
+- **Prediction latency** — средняя задержка обработки запросов;
+- **Total predictions** — общее количество предсказаний.
+
+Grafana доступна по адресу:
+http://localhost:3000
+
+yaml
+Копировать код
+
+Данные подключаются через источник данных **Prometheus**.
+
+---
+
+## 8. Запуск проекта
+
+### 8.1 Остановка предыдущих контейнеров
+```bash
+docker compose down -v
+8.2 Сборка и запуск сервисов
+bash
+Копировать код
+docker compose up --build
+После запуска становятся доступны:
+
+ML-сервис: http://localhost:8000/docs
+
+Prometheus: http://localhost:9090
+
+Grafana: http://localhost:3000
+
+9. Результаты работы
 В ходе лабораторной работы было выполнено:
- 
-  
- 
-Выгрузка обученной модели из MLflow.
- 
-  
- 
-Подготовка скрипта для загрузки модели в сервис.
- 
-  
- 
-Создание микросервиса на FastAPI.
- 
-  
- 
-Реализация REST-методов для предсказаний.
- 
-  
- 
-Создание Dockerfile.
- 
-  
- 
-Сборка Docker-образа.
- 
-  
- 
-Запуск микросервиса в Docker-контейнере.
+
+развертывание ML-сервиса предсказаний;
+
+реализация сбора Prometheus-метрик;
+
+настройка Prometheus для мониторинга сервиса;
+
+визуализация метрик в Grafana;
+
+организация запуска всех компонентов через Docker Compose.
+
+Система успешно демонстрирует мониторинг нагрузки и производительности
+микросервиса машинного обучения.
