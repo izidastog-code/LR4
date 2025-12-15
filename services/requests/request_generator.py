@@ -1,55 +1,38 @@
 import time
 import random
-import os
 import requests
 
-# Адрес сервиса предсказаний
-BASE_URL = os.getenv(
-    "PREDICTION_SERVICE_URL",
-    "http://localhost:8000"
-)
+URL = "http://ml_service:8000/api/prediction"
 
-PREDICTION_ENDPOINT = f"{BASE_URL}/api/prediction"
+payload = {
+    "age": 55,
+    "sex": 1,
+    "cp": 2,
+    "trestbps": 130,
+    "chol": 250,
+    "fbs": 0,
+    "restecg": 1,
+    "thalach": 150,
+    "exang": 0,
+    "oldpeak": 1.2,
+    "slope": 2,
+    "ca": 0,
+    "thal": 2
+}
 
-# Пример данных (адаптируй под свою модель при необходимости)
-def generate_payload():
-    return {
-        "age": random.randint(30, 80),
-        "sex": random.randint(0, 1),
-        "cp": random.randint(0, 3),
-        "trestbps": random.randint(90, 180),
-        "chol": random.randint(150, 350),
-        "fbs": random.randint(0, 1),
-        "restecg": random.randint(0, 2),
-        "thalach": random.randint(70, 210),
-        "exang": random.randint(0, 1),
-        "oldpeak": round(random.uniform(0.0, 6.0), 1),
-        "slope": random.randint(0, 2),
-        "ca": random.randint(0, 4),
-        "thal": random.randint(0, 3)
-    }
+print("🚀 Request generator started")
 
+while True:
+    try:
+        item_id = random.randint(1, 10_000)
+        r = requests.post(
+            URL,
+            params={"item_id": item_id},
+            json=payload,
+            timeout=3
+        )
+        print(f"✅ {item_id} → {r.status_code} → {r.json()}")
+    except Exception as e:
+        print(f"❌ Error: {e}")
 
-def main():
-    print(" Request generator started")
-    print(f"➡️ Sending requests to: {PREDICTION_ENDPOINT}")
-
-    while True:
-        try:
-            payload = generate_payload()
-            response = requests.post(PREDICTION_ENDPOINT, json=payload)
-
-            print(
-                f"Status: {response.status_code} | "
-                f"Response: {response.json()}"
-            )
-
-        except Exception as e:
-            print(f" Error: {e}")
-
-        # Случайная задержка от 0 до 5 секунд
-        time.sleep(random.uniform(0, 5))
-
-
-if __name__ == "__main__":
-    main()
+    time.sleep(random.uniform(0, 5))
